@@ -9,6 +9,8 @@ import {
   Dimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../../App';
 
 const { width } = Dimensions.get('window');
 
@@ -87,7 +89,9 @@ const subjects: Subject[] = [
   },
 ];
 
-export default function HomeScreen() {
+type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+
+export default function HomeScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
@@ -103,9 +107,15 @@ export default function HomeScreen() {
             <Text style={styles.appSubtitle}>KPSS HAZIRLIK REHBERİ</Text>
           </View>
 
-          <View style={styles.dayBadge}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.dayBadge,
+              pressed && styles.pressed,
+            ]}
+            onPress={() => navigation.navigate('Login')}
+          >
             <Text style={styles.dayBadgeText}>♨ 12 Gün</Text>
-          </View>
+          </Pressable>
         </View>
 
         <View style={styles.noteCard}>
@@ -144,46 +154,60 @@ export default function HomeScreen() {
         </View>
 
         <Pressable
-  style={({ pressed }) => [
-    styles.quickPracticeCard,
-    pressed && styles.pressed,
-  ]}
-  onPress={() => {
-    console.log('Hızlı Karma Pratik');
-  }}
->
-    <View>
-      <Text style={styles.quickPracticeTitle}>Hızlı Karma Pratik</Text>
-      <Text style={styles.quickPracticeSubtitle}>
-        ÖSYM çıkmış sorularından seçmeler
-       </Text>
+          style={({ pressed }) => [
+            styles.quickPracticeCard,
+            pressed && styles.pressed,
+          ]}
+          onPress={() => {
+            console.log('Hızlı Karma Pratik');
+          }}
+        >
+          <View>
+            <Text style={styles.quickPracticeTitle}>Hızlı Karma Pratik</Text>
+            <Text style={styles.quickPracticeSubtitle}>
+              ÖSYM çıkmış sorularından seçmeler
+            </Text>
+          </View>
+
+          <Text style={styles.quickPracticeArrow}>→</Text>
+        </Pressable>
+
+        <Text style={styles.sectionTitle}>Ders Çalışma Alanı</Text>
+
+        <View style={styles.subjectGrid}>
+          {subjects.map((subject) => (
+            <SubjectCard
+              key={subject.id}
+              subject={subject}
+              onPress={() => {
+                if (subject.id === 'tarih') {
+                  navigation.navigate('SubjectTopics');
+                } else {
+                  console.log(subject.title);
+                }
+              }}
+            />
+          ))}
         </View>
-
-      <Text style={styles.quickPracticeArrow}>→</Text>
-      </Pressable>
-
-      <Text style={styles.sectionTitle}>Ders Çalışma Alanı</Text>
-
-    <View style={styles.subjectGrid}>
-    {subjects.map((subject) => (
-      <SubjectCard key={subject.id} subject={subject} />
-    ))}
-  </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function SubjectCard({ subject }: { subject: Subject }) {
+function SubjectCard({
+  subject,
+  onPress,
+}: {
+  subject: Subject;
+  onPress?: () => void;
+}) {
   return (
     <Pressable
       style={({ pressed }) => [
         styles.subjectCard,
         pressed && styles.pressed,
       ]}
-      onPress={() => {
-        console.log(subject.title);
-      }}
+      onPress={onPress}
     >
       <View style={styles.subjectTopRow}>
         <View
@@ -194,7 +218,6 @@ function SubjectCard({ subject }: { subject: Subject }) {
             },
           ]}
         />
-
         <Text style={styles.subjectProgress}>{subject.progress}%</Text>
       </View>
 
@@ -230,19 +253,19 @@ const styles = StyleSheet.create({
   },
 
   appTitle: {
-    fontSize: 30,
-    lineHeight: 36,
+    fontSize: 28,
+    lineHeight: 34,
     color: COLORS.primary,
-    fontFamily: 'Georgia',
-    fontWeight: '700',
+    fontFamily: 'BesleyBold',
   },
 
   appSubtitle: {
     marginTop: 4,
-    fontSize: 11,
-    lineHeight: 15,
+    fontSize: 12,
+    lineHeight: 16,
     color: COLORS.secondary,
-    fontWeight: '500',
+    fontFamily: 'RethinkSansRegular',
+    letterSpacing: 0.2,
   },
 
   dayBadge: {
@@ -257,8 +280,8 @@ const styles = StyleSheet.create({
 
   dayBadgeText: {
     color: COLORS.orange,
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontFamily: 'RethinkSansBold',
   },
 
   noteCard: {
@@ -287,24 +310,22 @@ const styles = StyleSheet.create({
   },
 
   noteTitle: {
-    fontSize: 17,
+    fontSize: 16,
     color: COLORS.primary,
-    fontFamily: 'Georgia',
-    fontWeight: '700',
+    fontFamily: 'BesleyBold',
   },
 
   noteTag: {
     color: COLORS.secondary,
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
+    fontFamily: 'RethinkSansRegular',
   },
 
   noteText: {
     color: COLORS.primary,
-    fontSize: 15,
+    fontSize: 14,
     lineHeight: 20,
-    fontFamily: 'Georgia',
-    fontStyle: 'italic',
+    fontFamily: 'BesleyItalic',
   },
 
   goalCard: {
@@ -333,14 +354,14 @@ const styles = StyleSheet.create({
 
   goalTitle: {
     color: COLORS.primary,
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 15,
+    fontFamily: 'RethinkSansBold',
   },
 
   goalCount: {
     color: COLORS.orange,
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontFamily: 'RethinkSansBold',
   },
 
   progressTrack: {
@@ -367,22 +388,62 @@ const styles = StyleSheet.create({
 
   statLabel: {
     color: COLORS.secondary,
-    fontSize: 11,
+    fontSize: 12,
     marginBottom: 3,
+    fontFamily: 'RethinkSansRegular',
   },
 
   statValue: {
     color: COLORS.primary,
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 15,
+    fontFamily: 'RethinkSansBold',
+  },
+
+  quickPracticeCard: {
+    minHeight: 66,
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 14,
+    marginBottom: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: {
+      width: 0,
+      height: 5,
+    },
+    elevation: 5,
+  },
+
+  quickPracticeTitle: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontFamily: 'RethinkSansBold',
+    marginBottom: 5,
+  },
+
+  quickPracticeSubtitle: {
+    color: COLORS.lightBlue,
+    fontSize: 12,
+    fontFamily: 'RethinkSansRegular',
+  },
+
+  quickPracticeArrow: {
+    color: COLORS.white,
+    fontSize: 31,
+    lineHeight: 33,
+    fontFamily: 'RethinkSansRegular',
   },
 
   sectionTitle: {
     color: COLORS.primary,
-    fontSize: 21,
-    lineHeight: 28,
-    fontFamily: 'Georgia',
-    fontWeight: '700',
+    fontSize: 18,
+    lineHeight: 24,
+    fontFamily: 'BesleyBold',
     marginBottom: 14,
   },
 
@@ -428,61 +489,22 @@ const styles = StyleSheet.create({
 
   subjectProgress: {
     color: COLORS.secondary,
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: 12,
+    fontFamily: 'RethinkSansSemiBold',
   },
 
   subjectTitle: {
     color: COLORS.primary,
-    fontSize: 18,
-    lineHeight: 23,
-    fontFamily: 'Georgia',
-    fontWeight: '700',
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: 'BesleyBold',
     marginBottom: 8,
   },
 
   subjectSolved: {
     color: COLORS.secondary,
-    fontSize: 11,
-  },
-
-  quickPracticeCard: {
-  minHeight: 66,
-  backgroundColor: COLORS.primary,
-  borderRadius: 10,
-  paddingHorizontal: 15,
-  paddingVertical: 14,
-  marginBottom: 24,
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  shadowColor: COLORS.primary,
-  shadowOpacity: 0.18,
-  shadowRadius: 12,
-  shadowOffset: {
-    width: 0,
-    height: 5,
-  },
-  elevation: 5,
-},
-
-  quickPracticeTitle: {
-    color: COLORS.white,
-    fontSize: 13,
-    fontWeight: '800',
-    marginBottom: 5,
-  },
-
-  quickPracticeSubtitle: {
-    color: COLORS.lightBlue,
-    fontSize: 11,
-  },
-
-  quickPracticeArrow: {
-    color: COLORS.white,
-    fontSize: 31,
-    lineHeight: 33,
-    fontWeight: '300',
+    fontSize: 12,
+    fontFamily: 'RethinkSansRegular',
   },
 
   pressed: {
