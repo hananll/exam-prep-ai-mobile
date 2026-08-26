@@ -1,422 +1,230 @@
 import React from 'react';
 import {
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
-  Pressable,
   ScrollView,
+  TouchableOpacity,
+  SafeAreaView,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
 
-const COLORS = {
-  primary: '#1F3A4B',
-  secondary: '#5C6F7D',
-  white: '#FFFFFF',
-  border: '#E9E0D2',
-  orange: '#CE6A4A',
-  background: '#FAF6F0',
-  success: '#5F7F3B',
-  track: '#EEE8DF',
-};
-
 type Props = NativeStackScreenProps<RootStackParamList, 'QuizSummary'>;
 
-type TopicAnalysis = {
-  id: string;
-  title: string;
-  scoreText: string;
-  progress: number;
-  color: string;
-};
+export default function QuizSummaryScreen({ route, navigation }: any) {
+  const resultData = route?.params?.resultData || {
+    testAdi: 'KPSS Karma Tarama Testi',
+    toplamSoru: 0,
+    dogruSayisi: 0,
+    yanlisSayisi: 0,
+    gecenSure: '0 Dk 0 Sn',
+    konuAnalizleri: [],
+    sorular: [],
+    userAnswers: {},
+  };
 
-const topicAnalyses: TopicAnalysis[] = [
-  {
-    id: '1',
-    title: 'İslamiyet Öncesi Türk Tarihi',
-    scoreText: '5/5',
-    progress: 100,
-    color: COLORS.success,
-  },
-  {
-    id: '2',
-    title: 'İlk Türk-İslam Devletleri',
-    scoreText: '5/5',
-    progress: 100,
-    color: COLORS.success,
-  },
-  {
-    id: '3',
-    title: 'Osmanlı Devleti Islahatları',
-    scoreText: '8/12',
-    progress: 67,
-    color: COLORS.orange,
-  },
-  {
-    id: '4',
-    title: 'Kurtuluş Savaşı Hazırlık',
-    scoreText: '4/8',
-    progress: 50,
-    color: COLORS.orange,
-  },
-];
+  const testId = route?.params?.testId || 1;
 
-export default function QuizSummaryScreen({ navigation }: Props) {
+  const basariYuzdesi =
+    resultData.toplamSoru > 0
+      ? Math.round((resultData.dogruSayisi / resultData.toplamSoru) * 100)
+      : 0;
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
-
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
+    <SafeAreaView style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>Sınav Rapor Kartı</Text>
-          <Text style={styles.subtitle}>Tarih Karma Tarama Pratiği #14</Text>
+          <Text style={styles.headerTitle}>Sınav Rapor Kartı</Text>
+          <Text style={styles.headerSubtitle}>{resultData.testAdi}</Text>
         </View>
 
-        <View style={styles.summaryCard}>
-          <View style={styles.scoreCircle}>
-            <Text style={styles.scoreMain}>22 / 30</Text>
-            <Text style={styles.scoreLabel}>DOĞRU</Text>
+        {/* Skor Dairesi */}
+        <View style={styles.mainCard}>
+          <View style={styles.circleContainer}>
+            <Text style={styles.circleScore}>
+              {resultData.dogruSayisi} / {resultData.toplamSoru}
+            </Text>
+            <Text style={styles.circleLabel}>DOĞRU</Text>
           </View>
 
-          <Text style={styles.congratsText}>Tebrikler, Güzel İlerleme! 🎉</Text>
-          <Text style={styles.descText}>
-            Sınav barajını geçerek hedefine bir adım daha yaklaştın.
+          <Text style={styles.motivationalTitle}>
+            {basariYuzdesi >= 70 ? 'Tebrikler, Güzel İlerleme! 🎉' : 'Çalışmaya Devam! 💪'}
+          </Text>
+          <Text style={styles.motivationalDesc}>
+            {basariYuzdesi >= 70
+              ? 'Sınav barajını geçerek hedefine bir adım daha yaklaştın.'
+              : 'Eksik konularını tekrar ederek netlerini artırabilirsin.'}
           </Text>
         </View>
 
+        {/* 2x2 İstatistik Kartları */}
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Soru Sayısı</Text>
-            <Text style={styles.statValue}>30 Soru</Text>
+            <Text style={styles.statValueDark}>{resultData.toplamSoru} Soru</Text>
           </View>
 
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Doğru</Text>
-            <Text style={[styles.statValue, { color: COLORS.success }]}>
-              22 Doğru
-            </Text>
+            <Text style={styles.statValueGreen}>{resultData.dogruSayisi} Doğru</Text>
           </View>
 
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Yanlış</Text>
-            <Text style={[styles.statValue, { color: '#B73A32' }]}>
-              8 Yanlış
-            </Text>
+            <Text style={styles.statValueRed}>{resultData.yanlisSayisi} Yanlış</Text>
           </View>
 
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Süre</Text>
-            <Text style={[styles.statValue, { color: COLORS.orange }]}>
-              18 Dk 40 Sn
-            </Text>
+            <Text style={styles.statValueOrange}>{resultData.gecenSure}</Text>
           </View>
         </View>
 
+        {/* Konu Başarı Analizleri */}
         <Text style={styles.sectionTitle}>Konu Başarı Analizleri</Text>
 
         <View style={styles.analysisList}>
-          {topicAnalyses.map((item) => (
-            <View key={item.id} style={styles.analysisCard}>
-              <View style={styles.analysisTopRow}>
-                <Text style={styles.analysisTopic}>{item.title}</Text>
-                <Text style={styles.analysisScore}>{item.scoreText}</Text>
+          {resultData.konuAnalizleri.map((item: any, index: number) => {
+            const oran = item.toplam > 0 ? (item.dogru / item.toplam) * 100 : 0;
+            return (
+              <View key={index} style={styles.analysisCard}>
+                <View style={styles.analysisRow}>
+                  <Text style={styles.analysisSubject}>{item.konuAdi}</Text>
+                  <Text style={styles.analysisCount}>{item.dogru}/{item.toplam}</Text>
+                </View>
+                <View style={styles.progressBarBackground}>
+                  <View
+                    style={[
+                      styles.progressBarFill,
+                      { width: `${oran}%`, backgroundColor: oran >= 60 ? '#486940' : '#D2603D' },
+                    ]}
+                  />
+                </View>
               </View>
-
-              <View style={styles.analysisTrack}>
-                <View
-                  style={[
-                    styles.analysisFill,
-                    {
-                      width: `${item.progress}%`,
-                      backgroundColor: item.color,
-                    },
-                  ]}
-                />
-              </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
-        <View style={styles.bottomSection}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.reviewButton,
-              pressed && styles.pressed,
-            ]}
-            onPress={() => navigation.navigate('QuestionReview')}
+        {/* Alt Butonlar: Tekrar Çöz & Anasayfa */}
+        <View style={styles.actionButtonsRow}>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() =>
+              navigation.replace('Question', {
+                testId: testId,
+                lessonName: resultData.testAdi,
+              })
+            }
           >
-            <Text style={styles.reviewButtonText}>Soruları İncele</Text>
-          </Pressable>
+            <Text style={styles.retryButtonText}>🔄 Tekrar Çöz</Text>
+          </TouchableOpacity>
 
-          <View style={styles.buttonRow}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.retryButton,
-                pressed && styles.pressed,
-              ]}
-              onPress={() => navigation.navigate('Question')}
-            >
-              <Text style={styles.retryButtonText}>↺ Tekrar Çöz</Text>
-            </Pressable>
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.homeButton,
-                pressed && styles.pressed,
-              ]}
-              onPress={() => navigation.navigate('Home')}
-            >
-              <Text style={styles.homeButtonText}>Anasayfa</Text>
-            </Pressable>
-          </View>
+          <TouchableOpacity
+            style={styles.homeButton}
+            onPress={() => navigation.navigate('Home')}
+          >
+            <Text style={styles.homeButtonText}>Anasayfa</Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Soru İnceleme Butonu */}
+        <TouchableOpacity
+          style={styles.reviewLinkButton}
+          onPress={() =>
+            navigation.navigate('QuestionReview', {
+              sorular: resultData.sorular || [],
+              userAnswers: resultData.userAnswers || {},
+              testAdi: resultData.testAdi,
+              dogru: resultData.dogruSayisi,
+              yanlis: resultData.yanlisSayisi,
+            })
+          }
+        >
+          <Text style={styles.reviewLinkText}>Detaylı Soru İncelemesine Git ➔</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-
-  contentContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 18,
-    paddingBottom: 32,
-  },
-
-  header: {
+  container: { flex: 1, backgroundColor: '#FAF7EE' },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 30 },
+  header: { alignItems: 'center', marginBottom: 20 },
+  headerTitle: { fontSize: 24, fontWeight: '700', color: '#163143', fontFamily: 'BesleyBold' },
+  headerSubtitle: { fontSize: 14, color: '#6E7781', marginTop: 4, fontFamily: 'RethinkSansRegular' },
+  mainCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    paddingVertical: 24,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    marginBottom: 20,
-  },
-
-  title: {
-    color: COLORS.primary,
-    fontSize: 20,
-    lineHeight: 28,
-    fontFamily: 'BesleyBold',
-    marginBottom: 4,
-  },
-
-  subtitle: {
-    color: COLORS.secondary,
-    fontSize: 13,
-    fontFamily: 'RethinkSansRegular',
-  },
-
-  summaryCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginBottom: 18,
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 2,
-  },
-
-  scoreCircle: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    borderWidth: 3,
-    borderColor: COLORS.orange,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-
-  scoreMain: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontFamily: 'BesleyBold',
-    marginBottom: 2,
-  },
-
-  scoreLabel: {
-    color: COLORS.secondary,
-    fontSize: 11,
-    fontFamily: 'RethinkSansRegular',
-  },
-
-  congratsText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontFamily: 'BesleyBold',
-    marginBottom: 6,
-    textAlign: 'center',
-  },
-
-  descText: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    fontFamily: 'RethinkSansRegular',
-    textAlign: 'center',
-  },
-
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    rowGap: 10,
     marginBottom: 16,
   },
-
-  statCard: {
-    width: '48.5%',
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-  },
-
-  statLabel: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    fontFamily: 'RethinkSansRegular',
-    marginBottom: 8,
-  },
-
-  statValue: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontFamily: 'BesleyBold',
-  },
-
-  sectionTitle: {
-    color: COLORS.primary,
-    fontSize: 18,
-    fontFamily: 'BesleyBold',
-    marginBottom: 12,
-  },
-
-  analysisList: {
-    gap: 10,
-    marginBottom: 20,
-  },
-
-  analysisCard: {
-    backgroundColor: COLORS.white,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-  },
-
-  analysisTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-
-  analysisTopic: {
-    flex: 1,
-    color: COLORS.primary,
-    fontSize: 13,
-    fontFamily: 'RethinkSansSemiBold',
-    marginRight: 8,
-  },
-
-  analysisScore: {
-    color: COLORS.primary,
-    fontSize: 13,
-    fontFamily: 'RethinkSansSemiBold',
-  },
-
-  analysisTrack: {
-    height: 4,
-    borderRadius: 99,
-    backgroundColor: COLORS.track,
-    overflow: 'hidden',
-  },
-
-  analysisFill: {
-    height: '100%',
-    borderRadius: 99,
-  },
-
-  bottomSection: {
-    gap: 12,
-  },
-
-  reviewButton: {
-    height: 50,
-    backgroundColor: COLORS.primary,
-    borderRadius: 14,
-    alignItems: 'center',
+  circleContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: '#D2603D',
     justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
   },
-
-  reviewButtonText: {
-    color: COLORS.white,
-    fontSize: 15,
-    fontFamily: 'RethinkSansBold',
+  circleScore: { fontSize: 18, fontWeight: '700', color: '#163143', fontFamily: 'BesleyBold' },
+  circleLabel: { fontSize: 10, fontWeight: '600', color: '#6E7781', marginTop: 2 },
+  motivationalTitle: { fontSize: 18, fontWeight: '700', color: '#163143', marginBottom: 6, fontFamily: 'BesleyBold' },
+  motivationalDesc: { fontSize: 13, color: '#6E7781', textAlign: 'center', lineHeight: 18 },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 24 },
+  statCard: {
+    width: '48%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F0EBE1',
   },
-
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
+  statLabel: { fontSize: 12, color: '#6E7781', marginBottom: 8 },
+  statValueDark: { fontSize: 18, fontWeight: '700', color: '#163143', fontFamily: 'BesleyBold' },
+  statValueGreen: { fontSize: 18, fontWeight: '700', color: '#486940', fontFamily: 'BesleyBold' },
+  statValueRed: { fontSize: 18, fontWeight: '700', color: '#D2603D', fontFamily: 'BesleyBold' },
+  statValueOrange: { fontSize: 17, fontWeight: '700', color: '#D2603D', fontFamily: 'BesleyBold' },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#163143', marginBottom: 12, fontFamily: 'BesleyBold' },
+  analysisList: { marginBottom: 24 },
+  analysisCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#F0EBE1',
   },
-
+  analysisRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  analysisSubject: { fontSize: 14, fontWeight: '600', color: '#163143', flex: 1 },
+  analysisCount: { fontSize: 13, fontWeight: '700', color: '#163143' },
+  progressBarBackground: { height: 5, backgroundColor: '#EAE5DB', borderRadius: 3, overflow: 'hidden' },
+  progressBarFill: { height: '100%', borderRadius: 3 },
+  actionButtonsRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12, marginBottom: 14 },
   retryButton: {
     flex: 1,
-    height: 52,
-    backgroundColor: COLORS.orange,
+    backgroundColor: '#CE6A4A',
     borderRadius: 14,
+    paddingVertical: 16,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-
-  retryButtonText: {
-    color: COLORS.white,
-    fontSize: 15,
-    fontFamily: 'RethinkSansBold',
-  },
-
+  retryButtonText: { color: '#FFFFFF', fontSize: 15, fontWeight: '600', fontFamily: 'RethinkSansBold' },
   homeButton: {
     flex: 1,
-    height: 52,
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#E9E0D2',
+    borderRadius: 14,
+    paddingVertical: 16,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-
-  homeButtonText: {
-    color: COLORS.primary,
-    fontSize: 15,
-    fontFamily: 'RethinkSansBold',
-  },
-
-  pressed: {
-    opacity: 0.86,
-  },
+  homeButtonText: { color: '#1F3A4B', fontSize: 15, fontWeight: '600', fontFamily: 'RethinkSansBold' },
+  reviewLinkButton: { alignItems: 'center', paddingVertical: 8 },
+  reviewLinkText: { color: '#1F3A4B', fontSize: 14, fontWeight: '700', textDecorationLine: 'underline' },
 });

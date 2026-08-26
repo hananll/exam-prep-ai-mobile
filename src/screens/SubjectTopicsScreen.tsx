@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -6,10 +6,11 @@ import {
   Text,
   View,
   Pressable,
+  ActivityIndicator,
+  Alert,
+  RefreshControl,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../../App';
 
 const COLORS = {
   primary: '#1F3A4B',
@@ -20,71 +21,51 @@ const COLORS = {
   background: '#FAF6F0',
 };
 
-type Topic = {
-  id: string;
-  title: string;
-  solved: string;
-  progress: number;
-  color: string;
-  completed?: boolean;
-};
+const API_BASE_URL = 'http://192.168.137.251:8000/api';
 
-const topics: Topic[] = [
-  {
-    id: '1',
-    title: 'İslamiyet Öncesi Türk\nTarihi',
-    solved: '100/100 Soru',
-    progress: 100,
-    color: '#4E7A20',
-    completed: true,
-  },
-  {
-    id: '2',
-    title: 'İlk Türk-İslam Devletleri',
-    solved: '96/120 Soru',
-    progress: 80,
-    color: COLORS.orange,
-  },
-  {
-    id: '3',
-    title: 'Osmanlı Devleti Kuruluş\nve Yükselme',
-    solved: '180/300 Soru',
-    progress: 60,
-    color: COLORS.orange,
-  },
-  {
-    id: '4',
-    title: 'Osmanlı Devleti Kültür ve\nUygarlık',
-    solved: '90/200 Soru',
-    progress: 45,
-    color: COLORS.orange,
-  },
-  {
-    id: '5',
-    title: 'Kurtuluş Savaşı Hazırlık\nDönemi',
-    solved: '20/200 Soru',
-    progress: 10,
-    color: COLORS.orange,
-  },
-  {
-    id: '6',
-    title: 'İnkılap Tarihi ve\nAtatürkçülük',
-    solved: '0/250 Soru',
-    progress: 0,
-    color: '#EEE8DF',
-  },
-  {
-    id: '7',
-    title: 'Çağdaş Türk ve Dünya\nTarihi',
-    solved: '0/150 Soru',
-    progress: 0,
-    color: '#EEE8DF',
-  },
-];
+export interface TestPaketiApi {
+  id: number;
+  test_adi: string;
+  konu_adi: string;
+  hedef_soru_sayisi: number;
+  eklenen_soru_sayisi: number;
+}
 
-type Props = NativeStackScreenProps<RootStackParamList, 'SubjectTopics'>;
+export default function SubjectTopicsScreen({ navigation, route }: any) {
+  const dersId = route.params?.dersId || 1;
+  const dersAdi = route.params?.dersAdi || 'Türkçe';
 
-export default function SubjectTopicsScreen({ navigation }: Props) {
+  const [testler, setTestler] = useState<TestPaketiApi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchTestler = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/dersler/${dersId}/test-paketleri`);
+      const data = await response.json();
+      if (response.ok) {
+        setTestler(data);
+      } else {
+        Alert.alert('Bilgi', 'Bu derse ait test paketi bulunamadı.');
+      }
+    } catch (error) {
+      console.error('Testler yüklenirken hata:', error);
+      Alert.alert('Bağlantı Hatası', 'Testler sunucudan yüklenemedi.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTestler();
+  }, [dersId]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchTestler();
+  }, [dersId]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
@@ -93,7 +74,11 @@ export default function SubjectTopicsScreen({ navigation }: Props) {
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.orange]} />
+        }
       >
+        
         <View style={styles.header}>
           <Pressable
             style={({ pressed }) => [
@@ -106,83 +91,87 @@ export default function SubjectTopicsScreen({ navigation }: Props) {
           </Pressable>
 
           <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>Tarih Konuları</Text>
+            <Text style={styles.headerTitle}>{dersAdi} Testleri</Text>
             <Text style={styles.headerSubtitle}>
-              Önem Sırasına Göre Listelenmiştir
+              Mevcut Test Paketleri ve Denemeler
             </Text>
           </View>
         </View>
 
         <View style={styles.summaryCard}>
           <View style={styles.summaryLeft}>
-            <Text style={styles.summaryTitle}>Tarih Net Durumu 📈</Text>
+            <Text style={styles.summaryTitle}>{dersAdi} Başarı Durumu 📈</Text>
             <Text style={styles.summaryText}>
-              Toplam 27 Tarih sorusundan ortalama{'\n'}netin: 18.5
+              Veritabanında çözülmeye hazır toplam {testler.length} test paketi bulunuyor.
             </Text>
           </View>
 
           <View style={styles.summaryCircle}>
-            <Text style={styles.summaryCircleText}>%65</Text>
+            <Text style={styles.summaryCircleText}>%{testler.length > 0 ? '100' : '0'}</Text>
           </View>
         </View>
 
-        <View style={styles.listContainer}>
-          {topics.map((topic) => (
-            <TopicCard
-              key={topic.id}
-              topic={topic}
-              onPress={() => navigation.navigate('Question')}
-            />
-          ))}
-        </View>
+        {loading ? (
+          <ActivityIndicator size="large" color={COLORS.orange} style={{ marginTop: 30 }} />
+        ) : (
+          <View style={styles.listContainer}>
+            {testler.length === 0 ? (
+              <Text style={{ textAlign: 'center', color: COLORS.secondary, marginTop: 20 }}>
+                Bu derse ait tanımlı test paketi bulunmuyor.
+              </Text>
+            ) : (
+              testler.map((item, index) => (
+                <Pressable
+                  key={item.id}
+                  style={({ pressed }) => [styles.topicCard, pressed && styles.pressed]}
+                  onPress={() => {
+                    if (item.eklenen_soru_sayisi === 0) {
+                      Alert.alert('Bilgi', 'Bu teste henüz soru eklenmemiştir.');
+                      return;
+                    }
+                    navigation.navigate('Question' as any, {
+                      testId: item.id,
+                      lessonName: `${dersAdi} - ${item.test_adi}`,
+                    });
+                  }}
+                >
+                  <View style={styles.topicHeader}>
+                    <View style={{ flex: 1, paddingRight: 8 }}>
+                      <Text style={styles.topicTitle}>
+                        {index + 1}. {item.test_adi}
+                      </Text>
+                      <Text style={styles.subTopicText}>{item.konu_adi}</Text>
+                    </View>
+
+                    <View style={styles.completedBadge}>
+                      <Text style={styles.completedBadgeText}>TESTE BAŞLA ➔</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.progressRow}>
+                    <View style={styles.progressTrack}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          {
+                            width: `${Math.min(100, (item.eklenen_soru_sayisi / item.hedef_soru_sayisi) * 100)}%`,
+                            backgroundColor: COLORS.orange,
+                          },
+                        ]}
+                      />
+                    </View>
+
+                    <Text style={styles.progressText}>
+                      {item.eklenen_soru_sayisi}/{item.hedef_soru_sayisi} Soru
+                    </Text>
+                  </View>
+                </Pressable>
+              ))
+            )}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function TopicCard({
-  topic,
-  onPress,
-}: {
-  topic: Topic;
-  onPress?: () => void;
-}) {
-  return (
-    <Pressable
-      style={({ pressed }) => [styles.topicCard, pressed && styles.pressed]}
-      onPress={onPress}
-    >
-      <View style={styles.topicHeader}>
-        <Text style={styles.topicTitle}>{topic.title}</Text>
-
-        <View style={styles.topicRight}>
-          {topic.completed ? (
-            <View style={styles.completedBadge}>
-              <Text style={styles.completedBadgeText}>TAMAMLANDI</Text>
-            </View>
-          ) : (
-            <Text style={styles.topicSolved}>{topic.solved}</Text>
-          )}
-        </View>
-      </View>
-
-      <View style={styles.progressRow}>
-        <View style={styles.progressTrack}>
-          <View
-            style={[
-              styles.progressFill,
-              {
-                width: `${topic.progress}%`,
-                backgroundColor:
-                  topic.progress === 100 ? '#4E7A20' : topic.color,
-              },
-            ]}
-          />
-        </View>
-
-        <Text style={styles.progressText}>%{topic.progress}</Text>
-      </View>
-    </Pressable>
   );
 }
 
@@ -191,24 +180,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
-
   contentContainer: {
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 30,
   },
-
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 18,
   },
-
   backButton: {
     width: 32,
     height: 32,
@@ -220,17 +205,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 10,
   },
-
   backArrow: {
     color: COLORS.primary,
     fontSize: 18,
     fontFamily: 'RethinkSansSemiBold',
   },
-
   headerTextContainer: {
     flex: 1,
   },
-
   headerTitle: {
     fontSize: 22,
     lineHeight: 28,
@@ -238,13 +220,11 @@ const styles = StyleSheet.create({
     fontFamily: 'BesleyBold',
     marginBottom: 2,
   },
-
   headerSubtitle: {
     fontSize: 13,
     color: COLORS.secondary,
     fontFamily: 'RethinkSansRegular',
   },
-
   summaryCard: {
     backgroundColor: COLORS.background,
     borderWidth: 1.2,
@@ -257,26 +237,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 18,
   },
-
   summaryLeft: {
     flex: 1,
     paddingRight: 12,
   },
-
   summaryTitle: {
     color: COLORS.orange,
     fontSize: 16,
     fontFamily: 'BesleyBold',
     marginBottom: 6,
   },
-
   summaryText: {
     color: COLORS.primary,
     fontSize: 13,
     lineHeight: 18,
     fontFamily: 'RethinkSansRegular',
   },
-
   summaryCircle: {
     width: 48,
     height: 48,
@@ -287,17 +263,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: COLORS.background,
   },
-
   summaryCircleText: {
     color: COLORS.orange,
     fontSize: 14,
     fontFamily: 'BesleyBold',
   },
-
   listContainer: {
     gap: 12,
   },
-
   topicCard: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
@@ -308,58 +281,42 @@ const styles = StyleSheet.create({
     shadowColor: COLORS.primary,
     shadowOpacity: 0.06,
     shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
-
   topicHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 14,
+    marginBottom: 10,
   },
-
   topicTitle: {
-    flex: 1,
     color: COLORS.primary,
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 20,
     fontFamily: 'BesleyBold',
-    paddingRight: 10,
   },
-
-  topicRight: {
-    alignItems: 'flex-end',
-    justifyContent: 'flex-start',
-  },
-
-  topicSolved: {
+  subTopicText: {
     color: COLORS.secondary,
     fontSize: 12,
-    fontFamily: 'RethinkSansSemiBold',
+    fontFamily: 'RethinkSansRegular',
+    marginTop: 2,
   },
-
   completedBadge: {
-    backgroundColor: '#DDE7C9',
+    backgroundColor: '#FDE9E2',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
-
   completedBadgeText: {
-    color: '#6F7E45',
+    color: COLORS.orange,
     fontSize: 11,
     fontFamily: 'RethinkSansBold',
   },
-
   progressRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-
   progressTrack: {
     flex: 1,
     height: 4,
@@ -368,20 +325,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginRight: 10,
   },
-
   progressFill: {
     height: '100%',
     borderRadius: 99,
   },
-
   progressText: {
-    width: 34,
     textAlign: 'right',
     color: COLORS.primary,
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: 'RethinkSansSemiBold',
   },
-
   pressed: {
     opacity: 0.85,
   },

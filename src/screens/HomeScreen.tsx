@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   ScrollView,
@@ -6,13 +6,10 @@ import {
   Text,
   View,
   Pressable,
-  Dimensions,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../../App';
-
-const { width } = Dimensions.get('window');
 
 const COLORS = {
   primary: '#1F3A4B',
@@ -21,77 +18,55 @@ const COLORS = {
   border: '#E9E0D2',
   orange: '#CE6A4A',
   background: '#FAF6F0',
-  blue: '#4E7385',
-  green: '#5F7464',
-  purple: '#7B6B8D',
-  olive: '#8E9A70',
-  lightBlue: '#A5C4D4',
-  amber: '#DDA15E',
-  palePink: '#F9ECF8',
+  cardBg: '#FFFFFF',
 };
 
-const CARD_HORIZONTAL_PADDING = 16;
-const SCREEN_PADDING = 16;
-const SUBJECT_CARD_GAP = 14;
-const SUBJECT_CARD_WIDTH =
-  (width - SCREEN_PADDING * 2 - SUBJECT_CARD_GAP) / 2;
+const API_BASE_URL = 'http://192.168.137.251:8000/api';
 
-type Subject = {
-  id: string;
-  title: string;
-  solvedText: string;
-  progress: number;
-  color: string;
-};
+export interface DersApi {
+  id: number;
+  ders_adi: string;
+  sira_numarasi?: number;
+}
 
-const subjects: Subject[] = [
-  {
-    id: 'turkce',
-    title: 'Türkçe',
-    solvedText: '1.420 Soru çözüldü',
-    progress: 84,
-    color: COLORS.blue,
-  },
-  {
-    id: 'matematik',
-    title: 'Matematik',
-    solvedText: '920 Soru çözüldü',
-    progress: 42,
-    color: COLORS.orange,
-  },
-  {
-    id: 'tarih',
-    title: 'Tarih',
-    solvedText: '2.100 Soru çözüldü',
-    progress: 76,
-    color: COLORS.amber,
-  },
-  {
-    id: 'cografya',
-    title: 'Coğrafya',
-    solvedText: '1.150 Soru çözüldü',
-    progress: 58,
-    color: COLORS.green,
-  },
-  {
-    id: 'vatandaslik',
-    title: 'Vatandaşlık',
-    solvedText: '740 Soru çözüldü',
-    progress: 30,
-    color: COLORS.purple,
-  },
-  {
-    id: 'guncel',
-    title: 'Güncel Bilgiler',
-    solvedText: '510 Soru çözüldü',
-    progress: 95,
-    color: COLORS.olive,
-  },
-];
+export default function HomeScreen({ navigation }: any) {
+  const [dersler, setDersler] = useState<DersApi[]>([]);
+  const [loading, setLoading] = useState(true);
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+  const getDersIcon = (dersAdi: string) => {
+    const name = dersAdi.toLowerCase();
+    if (name.includes('türkçe')) return '📚';
+    if (name.includes('matematik') || name.includes('geometri')) return '📐';
+    if (name.includes('tarih')) return '🏛️';
+    if (name.includes('coğrafya')) return '🌍';
+    if (name.includes('vatandaşlık')) return '⚖️';
+    if (name.includes('güncel')) return '📰';
+    return '📝';
+  };
 
-export default function HomeScreen({ navigation }: Props) {
+  const fetchDersler = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/dersler`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        const dersListesi = Array.isArray(data) ? data : (data.data || []);
+        setDersler(dersListesi);
+      } else {
+        Alert.alert('Hata', 'Ders listesi alınamadı.');
+      }
+    } catch (error) {
+      console.error('Dersler yüklenirken hata:', error);
+      Alert.alert('Bağlantı Hatası', 'Sunucuya bağlanılamadı. IP adresini kontrol edin.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDersler();
+  }, []);
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
@@ -101,51 +76,49 @@ export default function HomeScreen({ navigation }: Props) {
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
+        {/* HEADER & LOGIN TETİKLEYİCİ STREAK ROZETİ */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.appTitle}>Sınav Yolu</Text>
-            <Text style={styles.appSubtitle}>KPSS HAZIRLIK REHBERİ</Text>
+            <Text style={styles.headerTitle}>Sınav Yolu</Text>
+            <Text style={styles.headerSubtitle}>KPSS HAZIRLIK REHBERİ</Text>
           </View>
-
+          
           <Pressable
             style={({ pressed }) => [
-              styles.dayBadge,
+              styles.streakBadge,
               pressed && styles.pressed,
             ]}
-            onPress={() => navigation.navigate('Login')}
+            onPress={() => navigation.navigate('Login' as any)}
           >
-            <Text style={styles.dayBadgeText}>♨ 12 Gün</Text>
+            <Text style={styles.streakText}>🔥 Giriş Yap & Serini Koru</Text>
           </Pressable>
         </View>
 
-        <View style={styles.noteCard}>
-          <View style={styles.noteHeader}>
-            <Text style={styles.noteTitle}>Günün Notu ✍️</Text>
-            <Text style={styles.noteTag}>ÖSYM Tarzı</Text>
+        {/* GÜNÜN NOTU */}
+        <View style={styles.quoteCard}>
+          <View style={styles.quoteHeader}>
+            <Text style={styles.quoteTitle}>Günün Notu ✍️</Text>
+            <Text style={styles.quoteBadge}>ÖSYM Tarzı</Text>
           </View>
-
-          <Text style={styles.noteText}>
-            "Büyük başarılar, her gün atılan küçük adımların toplamıdır. Tarih
-            tekrardan ibarettir, senin başarın ise kalıcı olacak!"
+          <Text style={styles.quoteBody}>
+            "Büyük başarılar, her gün atılan küçük adımların toplamıdır. Tarih tekrardan ibarettir, senin başarın ise kalıcı olacak!"
           </Text>
         </View>
 
+        {/* GÜNLÜK HEDEF KARTI */}
         <View style={styles.goalCard}>
           <View style={styles.goalHeader}>
             <Text style={styles.goalTitle}>Bugünkü Hedefin</Text>
-            <Text style={styles.goalCount}>120 / 200 Soru</Text>
+            <Text style={styles.goalProgressText}>120 / 200 Soru</Text>
           </View>
-
-          <View style={styles.progressTrack}>
-            <View style={styles.progressFill} />
+          <View style={styles.goalTrack}>
+            <View style={[styles.goalFill, { width: '60%' }]} />
           </View>
-
-          <View style={styles.goalStats}>
+          <View style={styles.goalStatsRow}>
             <View>
               <Text style={styles.statLabel}>Çözülen Soru</Text>
               <Text style={styles.statValue}>120 Soru</Text>
             </View>
-
             <View>
               <Text style={styles.statLabel}>Süre</Text>
               <Text style={styles.statValue}>45 Dk</Text>
@@ -153,77 +126,55 @@ export default function HomeScreen({ navigation }: Props) {
           </View>
         </View>
 
+        {/* HIZLI KARMA PRATİK */}
         <Pressable
-          style={({ pressed }) => [
-            styles.quickPracticeCard,
-            pressed && styles.pressed,
-          ]}
-          onPress={() => {
-            console.log('Hızlı Karma Pratik');
-          }}
+          style={({ pressed }) => [styles.quickPracticeCard, pressed && styles.pressed]}
+          onPress={() => Alert.alert('Bilgi', 'Karma deneme modu hazırlanıyor.')}
         >
           <View>
-            <Text style={styles.quickPracticeTitle}>Hızlı Karma Pratik</Text>
-            <Text style={styles.quickPracticeSubtitle}>
-              ÖSYM çıkmış sorularından seçmeler
-            </Text>
+            <Text style={styles.quickTitle}>Hızlı Karma Pratik</Text>
+            <Text style={styles.quickSubtitle}>ÖSYM çıkmış sorularından seçmeler</Text>
           </View>
-
-          <Text style={styles.quickPracticeArrow}>→</Text>
+          <Text style={styles.quickArrow}>➔</Text>
         </Pressable>
 
+        {/* DERS ÇALIŞMA ALANI */}
         <Text style={styles.sectionTitle}>Ders Çalışma Alanı</Text>
 
-        <View style={styles.subjectGrid}>
-          {subjects.map((subject) => (
-            <SubjectCard
-              key={subject.id}
-              subject={subject}
-              onPress={() => {
-                if (subject.id === 'tarih') {
-                  navigation.navigate('SubjectTopics');
-                } else {
-                  console.log(subject.title);
-                }
-              }}
-            />
-          ))}
-        </View>
+        {loading ? (
+          <ActivityIndicator size="large" color={COLORS.orange} style={{ marginTop: 20 }} />
+        ) : (
+          <View style={styles.subjectList}>
+            {dersler.map((ders) => (
+              <Pressable
+                key={ders.id}
+                style={({ pressed }) => [styles.subjectCard, pressed && styles.pressed]}
+                onPress={() => {
+                  navigation.navigate('SubjectTopics' as any, {
+                    dersId: ders.id,
+                    dersAdi: ders.ders_adi,
+                  });
+                }}
+              >
+                <View style={styles.subjectCardLeft}>
+                  <View style={styles.subjectIconCircle}>
+                    <Text style={styles.subjectIcon}>{getDersIcon(ders.ders_adi)}</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.subjectName}>{ders.ders_adi}</Text>
+                    <Text style={styles.subjectSubText}>Konu testleri & denemeler</Text>
+                  </View>
+                </View>
+
+                <View style={styles.arrowCircle}>
+                  <Text style={styles.cardArrow}>➔</Text>
+                </View>
+              </Pressable>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function SubjectCard({
-  subject,
-  onPress,
-}: {
-  subject: Subject;
-  onPress?: () => void;
-}) {
-  return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.subjectCard,
-        pressed && styles.pressed,
-      ]}
-      onPress={onPress}
-    >
-      <View style={styles.subjectTopRow}>
-        <View
-          style={[
-            styles.subjectDot,
-            {
-              backgroundColor: subject.color,
-            },
-          ]}
-        />
-        <Text style={styles.subjectProgress}>{subject.progress}%</Text>
-      </View>
-
-      <Text style={styles.subjectTitle}>{subject.title}</Text>
-      <Text style={styles.subjectSolved}>{subject.solvedText}</Text>
-    </Pressable>
   );
 }
 
@@ -232,281 +183,226 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
-
   contentContainer: {
-    paddingHorizontal: SCREEN_PADDING,
-    paddingTop: 22,
-    paddingBottom: 40,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 36,
   },
-
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 52,
-    paddingHorizontal: 4,
+    alignItems: 'center',
+    marginBottom: 16,
   },
-
-  appTitle: {
-    fontSize: 28,
-    lineHeight: 34,
+  headerTitle: {
+    fontSize: 24,
     color: COLORS.primary,
     fontFamily: 'BesleyBold',
   },
-
-  appSubtitle: {
-    marginTop: 4,
-    fontSize: 12,
-    lineHeight: 16,
+  headerSubtitle: {
+    fontSize: 10.5,
     color: COLORS.secondary,
-    fontFamily: 'RethinkSansRegular',
-    letterSpacing: 0.2,
+    fontFamily: 'RethinkSansBold',
+    letterSpacing: 0.5,
   },
-
-  dayBadge: {
-    marginTop: 5,
-    paddingHorizontal: 14,
+  streakBadge: {
+    borderWidth: 1.2,
+    borderColor: '#F3C4B3',
+    backgroundColor: '#FFF0EA',
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 14,
-    backgroundColor: COLORS.palePink,
-    borderWidth: 1,
-    borderColor: COLORS.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 1,
+    shadowColor: COLORS.orange,
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
   },
-
-  dayBadgeText: {
+  streakText: {
     color: COLORS.orange,
-    fontSize: 14,
+    fontSize: 12.5,
     fontFamily: 'RethinkSansBold',
   },
-
-  noteCard: {
+  quoteCard: {
     backgroundColor: COLORS.white,
-    borderRadius: 12,
-    paddingHorizontal: CARD_HORIZONTAL_PADDING,
-    paddingVertical: 17,
     borderWidth: 1,
     borderColor: COLORS.border,
-    marginBottom: 20,
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 3,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
   },
-
-  noteHeader: {
+  quoteHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    alignItems: 'center',
+    marginBottom: 8,
   },
-
-  noteTitle: {
-    fontSize: 16,
+  quoteTitle: {
     color: COLORS.primary,
+    fontSize: 15,
     fontFamily: 'BesleyBold',
   },
-
-  noteTag: {
+  quoteBadge: {
+    fontSize: 11,
     color: COLORS.secondary,
-    fontSize: 12,
+    fontFamily: 'RethinkSansSemiBold',
+  },
+  quoteBody: {
+    color: COLORS.primary,
+    fontSize: 13,
+    lineHeight: 20,
+    fontStyle: 'italic',
     fontFamily: 'RethinkSansRegular',
   },
-
-  noteText: {
-    color: COLORS.primary,
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: 'BesleyItalic',
-  },
-
   goalCard: {
     backgroundColor: COLORS.white,
-    borderRadius: 12,
-    paddingHorizontal: CARD_HORIZONTAL_PADDING,
-    paddingVertical: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
-    marginBottom: 22,
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 3,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
   },
-
   goalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 10,
   },
-
   goalTitle: {
     color: COLORS.primary,
-    fontSize: 15,
-    fontFamily: 'RethinkSansBold',
-  },
-
-  goalCount: {
-    color: COLORS.orange,
     fontSize: 14,
+    fontFamily: 'BesleyBold',
+  },
+  goalProgressText: {
+    color: COLORS.orange,
+    fontSize: 13,
     fontFamily: 'RethinkSansBold',
   },
-
-  progressTrack: {
+  goalTrack: {
     height: 6,
-    borderRadius: 20,
-    backgroundColor: COLORS.border,
-    marginTop: 14,
-    marginBottom: 13,
+    backgroundColor: '#EEE8DF',
+    borderRadius: 99,
     overflow: 'hidden',
+    marginBottom: 12,
   },
-
-  progressFill: {
-    width: '60%',
+  goalFill: {
     height: '100%',
     backgroundColor: COLORS.orange,
-    borderRadius: 20,
-  },
-
-  goalStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    columnGap: 100,
-  },
-
-  statLabel: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    marginBottom: 3,
-    fontFamily: 'RethinkSansRegular',
-  },
-
-  statValue: {
-    color: COLORS.primary,
-    fontSize: 15,
-    fontFamily: 'RethinkSansBold',
-  },
-
-  quickPracticeCard: {
-    minHeight: 66,
-    backgroundColor: COLORS.primary,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 14,
-    marginBottom: 24,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.18,
-    shadowRadius: 12,
-    shadowOffset: {
-      width: 0,
-      height: 5,
-    },
-    elevation: 5,
-  },
-
-  quickPracticeTitle: {
-    color: COLORS.white,
-    fontSize: 15,
-    fontFamily: 'RethinkSansBold',
-    marginBottom: 5,
-  },
-
-  quickPracticeSubtitle: {
-    color: COLORS.lightBlue,
-    fontSize: 12,
-    fontFamily: 'RethinkSansRegular',
-  },
-
-  quickPracticeArrow: {
-    color: COLORS.white,
-    fontSize: 31,
-    lineHeight: 33,
-    fontFamily: 'RethinkSansRegular',
-  },
-
-  sectionTitle: {
-    color: COLORS.primary,
-    fontSize: 18,
-    lineHeight: 24,
-    fontFamily: 'BesleyBold',
-    marginBottom: 14,
-  },
-
-  subjectGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    columnGap: SUBJECT_CARD_GAP,
-    rowGap: 26,
-  },
-
-  subjectCard: {
-    width: SUBJECT_CARD_WIDTH,
-    minHeight: 99,
-    backgroundColor: COLORS.white,
-    borderRadius: 9,
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    elevation: 3,
-  },
-
-  subjectTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 11,
-  },
-
-  subjectDot: {
-    width: 9,
-    height: 9,
     borderRadius: 99,
   },
-
-  subjectProgress: {
+  goalStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  statLabel: {
+    fontSize: 11,
     color: COLORS.secondary,
-    fontSize: 12,
-    fontFamily: 'RethinkSansSemiBold',
+    fontFamily: 'RethinkSansRegular',
+    marginBottom: 2,
   },
-
-  subjectTitle: {
+  statValue: {
+    fontSize: 14,
     color: COLORS.primary,
-    fontSize: 16,
-    lineHeight: 22,
     fontFamily: 'BesleyBold',
-    marginBottom: 8,
   },
-
-  subjectSolved: {
+  quickPracticeCard: {
+    backgroundColor: '#1C384A',
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  quickTitle: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontFamily: 'BesleyBold',
+    marginBottom: 2,
+  },
+  quickSubtitle: {
+    color: '#B0C4D0',
+    fontSize: 12,
+    fontFamily: 'RethinkSansRegular',
+  },
+  quickArrow: {
+    color: COLORS.white,
+    fontSize: 18,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    color: COLORS.primary,
+    fontFamily: 'BesleyBold',
+    marginBottom: 12,
+  },
+  subjectList: {
+    gap: 10,
+  },
+  subjectCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 1,
+  },
+  subjectCardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  subjectIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFF4EE',
+    borderWidth: 1,
+    borderColor: '#FDE0D3',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  subjectIcon: {
+    fontSize: 20,
+  },
+  subjectName: {
+    color: COLORS.primary,
+    fontSize: 15,
+    fontFamily: 'BesleyBold',
+    marginBottom: 2,
+  },
+  subjectSubText: {
     color: COLORS.secondary,
     fontSize: 12,
     fontFamily: 'RethinkSansRegular',
   },
-
+  arrowCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardArrow: {
+    color: COLORS.orange,
+    fontSize: 13,
+    fontFamily: 'RethinkSansBold',
+  },
   pressed: {
     opacity: 0.85,
   },

@@ -4,565 +4,206 @@ import {
   StyleSheet,
   Text,
   View,
-  Pressable,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../../App';
-
-const COLORS = {
-  primary: '#1F3A4B',
-  secondary: '#6B7C88',
-  white: '#FFFFFF',
-  border: '#E9E0D2',
-  orange: '#CE6A4A',
-  background: '#FAF6F0',
-  success: '#5A7A2D',
-  successBg: '#EEF4E8',
-  danger: '#C13E36',
-  dangerBg: '#FFF1F0',
-  ai_button_background : '#F9ECE8',
-  shadow: 'rgba(31, 58, 75, 0.06)',
-};
+import type { SoruApi } from './QuestionScreen';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QuestionReview'>;
 
-type ReviewItem = {
-  id: string;
-  questionNo: number;
-  status: 'Doğru' | 'Yanlış';
-  yourAnswer: string;
-  correctAnswer: string;
-  questionText: string;
-  showReviewButton?: boolean;
-};
+export default function QuestionReviewScreen({ route, navigation }: Props) {
+  const sorular: SoruApi[] = route?.params?.sorular || [];
+  const userAnswers: { [soruId: number]: string } = route?.params?.userAnswers || {};
+  const testAdi = route?.params?.testAdi || 'Soru İnceleme';
+  const dogruSayisi = route?.params?.dogru ?? 0;
+  const yanlisSayisi = route?.params?.yanlis ?? 0;
 
-const reviewData: ReviewItem[] = [
-  {
-    id: '1',
-    questionNo: 1,
-    status: 'Yanlış',
-    yourAnswer: 'E',
-    correctAnswer: 'D',
-    questionText:
-      'Aşağıdakilerden hangisi padişahın yetkilerini ilk kez sınırlandırmıştır?',
-    showReviewButton: true,
-  },
-  {
-    id: '2',
-    questionNo: 2,
-    status: 'Doğru',
-    yourAnswer: 'B',
-    correctAnswer: 'B',
-    questionText:
-      'Osmanlı Devleti\'nde ilk geçici elçilikler hangi dönemde açılmıştır?',
-  },
-  {
-    id: '3',
-    questionNo: 3,
-    status: 'Doğru',
-    yourAnswer: 'A',
-    correctAnswer: 'A',
-    questionText:
-      "Sivas Kongresi'nde ulusal birliği sağlamak amacıyla alınan karar hangisidir?",
-  },
-  {
-    id: '4',
-    questionNo: 4,
-    status: 'Doğru',
-    yourAnswer: 'C',
-    correctAnswer: 'C',
-    questionText:
-      "Kutü'l Amare Kuşatması'nda büyük bir zafer kazanılan cephe hangisidir?",
-  },
-  {
-    id: '5',
-    questionNo: 5,
-    status: 'Yanlış',
-    yourAnswer: 'D',
-    correctAnswer: 'B',
-    questionText:
-      "Amasya Genelgesi'nin ihtilal beyannamesi niteliği taşımasının sebebi nedir?",
-    showReviewButton: true,
-  },
-  {
-    id: '6',
-    questionNo: 6,
-    status: 'Doğru',
-    yourAnswer: 'A',
-    correctAnswer: 'A',
-    questionText:
-      'Tarihte ilk Türk devletlerinde hükümdara yön veren temel anlayış nedir?',
-  },
-  {
-    id: '7',
-    questionNo: 7,
-    status: 'Yanlış',
-    yourAnswer: 'C',
-    correctAnswer: 'E',
-    questionText:
-      "Lozan Barış Antlaşması'nda çözüme kavuşturulamayan sorun hangisidir?",
-    showReviewButton: true,
-  },
-  {
-    id: '8',
-    questionNo: 8,
-    status: 'Doğru',
-    yourAnswer: 'D',
-    correctAnswer: 'D',
-    questionText:
-      "Osmanlı Devleti'nde eyalet askerlerinin en kalabalık grubunu hangisi oluşturur?",
-  },
-  {
-    id: '9',
-    questionNo: 9,
-    status: 'Doğru',
-    yourAnswer: 'B',
-    correctAnswer: 'B',
-    questionText:
-      'Atatürk döneminde çok partili hayata geçiş denemelerinden biri hangisidir?',
-  },
-  {
-    id: '10',
-    questionNo: 10,
-    status: 'Yanlış',
-    yourAnswer: 'A',
-    correctAnswer: 'C',
-    questionText:
-      "Anadolu Selçuklu Devleti'nde ticareti geliştirmek için yapılan uygulama hangisidir?",
-    showReviewButton: true,
-  },
-  {
-    id: '11',
-    questionNo: 11,
-    status: 'Doğru',
-    yourAnswer: 'E',
-    correctAnswer: 'E',
-    questionText:
-      "I. TBMM'nin çıkardığı ilk kanun aşağıdakilerden hangisidir?",
-  },
-];
-
-export default function QuestionReviewScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
+
+      {/* Üst Başlık & Geri Butonu */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.backButtonText}>←</Text>
+        </TouchableOpacity>
+        <View style={{ marginLeft: 12 }}>
+          <Text style={styles.headerTitle}>Soru İnceleme</Text>
+          <Text style={styles.headerSubtitle}>{testAdi}</Text>
+        </View>
+      </View>
 
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.pressed,
-            ]}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backArrow}>←</Text>
-          </Pressable>
-
-          <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>Soru İnceleme</Text>
-            <Text style={styles.headerSubtitle}>Tarih Karma Pratik #14</Text>
-          </View>
-        </View>
-
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Rapor Özeti</Text>
-
-          <Text style={styles.summaryStats}>
-            <Text style={styles.summaryMuted}>30 Soru • </Text>
-            <Text style={styles.summarySuccess}>22 D</Text>
-            <Text style={styles.summaryMuted}> • </Text>
-            <Text style={styles.summaryDanger}>8 Y</Text>
+        {/* Rapor Özeti Barı */}
+        <View style={styles.reportSummaryBar}>
+          <Text style={styles.reportSummaryTitle}>Rapor Özeti</Text>
+          <Text style={styles.reportSummaryCounts}>
+            {sorular.length} Soru • <Text style={{ color: '#486940' }}>{dogruSayisi} D</Text> •{' '}
+            <Text style={{ color: '#9E2A2B' }}>{yanlisSayisi} Y</Text>
           </Text>
         </View>
 
-        <View style={styles.reviewList}>
-          {reviewData.map((item) => (
-            <ReviewCard
-              key={item.id}
-              item={item}
-              onPressReview={() => navigation.navigate('AnswerResult')}
-            />
-          ))}
-        </View>
+        {/* Soruların Kart Listesi */}
+        {sorular.map((soru, index) => {
+          const userSelected = userAnswers[soru.id] || 'Boş';
+          const isCorrect = userSelected === soru.dogru_secenek;
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.homeButton,
-            pressed && styles.pressed,
-          ]}
+          return (
+            <View key={soru.id || index} style={styles.cardItem}>
+              <View style={styles.cardHeader}>
+                <View style={styles.badgeRow}>
+                  <View style={[styles.badgeSoruNo, isCorrect ? styles.bgCorrectBadge : styles.bgWrongBadge]}>
+                    <Text style={[styles.badgeSoruNoText, isCorrect ? styles.textCorrect : styles.textWrong]}>
+                      Soru {index + 1}
+                    </Text>
+                  </View>
+                  <Text style={[styles.statusText, isCorrect ? styles.textCorrect : styles.textWrong]}>
+                    {isCorrect ? '✓ Doğru' : '✕ Yanlış'}
+                  </Text>
+                </View>
+
+                <Text style={styles.answerCompareText}>
+                  Cevabın: <Text style={{ fontWeight: '700' }}>{userSelected}</Text> | Doğru:{' '}
+                  <Text style={{ fontWeight: '700', color: '#486940' }}>{soru.dogru_secenek}</Text>
+                </Text>
+              </View>
+
+              <Text style={styles.soruMetniShort} numberOfLines={2}>
+                {soru.soru_metni}
+              </Text>
+
+              {/* Yanlış Sorularda Katie'ye Sor Butonu */}
+              {!isCorrect && (
+                <View style={styles.aiAskRow}>
+                  <Text style={styles.aiAskPrompt}>Anlamadığın bir nokta mı var?</Text>
+                  <TouchableOpacity
+                    style={styles.aiAskButton}
+                    onPress={() =>
+                      navigation.navigate('KatieChat', {
+                        soruId: soru.id,
+                        soruMetni: soru.soru_metni,
+                        userAnswer: userSelected,
+                        correctAnswer: soru.dogru_secenek,
+                        explanation: soru.cozum_aciklamasi,
+                      })
+                    }
+                  >
+                    <Text style={styles.aiAskButtonText}>Katie'ye Sor 👩‍💼</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          );
+        })}
+
+        {/* Anasayfaya Dön Butonu */}
+        <TouchableOpacity
+          style={styles.bottomHomeButton}
           onPress={() => navigation.navigate('Home')}
         >
-          <Text style={styles.homeButtonText}>Anasayfaya Dön</Text>
-        </Pressable>
+          <Text style={styles.bottomHomeButtonText}>Anasayfaya Dön</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function ReviewCard({
-  item,
-  onPressReview,
-}: {
-  item: ReviewItem;
-  onPressReview?: () => void;
-}) {
-  const isWrong = item.status === 'Yanlış';
-
-  return (
-    <View style={styles.card}>
-      <View style={styles.cardTopRow}>
-        <View style={styles.leftTopRow}>
-          <View
-            style={[
-              styles.questionBadge,
-              isWrong ? styles.questionBadgeWrong : styles.questionBadgeCorrect,
-            ]}
-          >
-            <Text
-              style={[
-                styles.questionBadgeText,
-                isWrong
-                  ? styles.questionBadgeTextWrong
-                  : styles.questionBadgeTextCorrect,
-              ]}
-            >
-              Soru {item.questionNo}
-            </Text>
-          </View>
-
-          <View style={styles.statusWrap}>
-            <Text
-              style={[
-                styles.statusIcon,
-                isWrong ? styles.wrongText : styles.correctText,
-              ]}
-            >
-              {isWrong ? '✕' : '✓'}
-            </Text>
-            <Text
-              style={[
-                styles.statusText,
-                isWrong ? styles.wrongText : styles.correctText,
-              ]}
-            >
-              {item.status}
-            </Text>
-          </View>
-        </View>
-
-        <Text style={styles.answerMeta}>
-          Cevabın:
-          <Text
-            style={isWrong ? styles.answerWrongHighlight : styles.answerCorrectHighlight}
-          >
-            {' '}{item.yourAnswer}
-          </Text>
-          {' | '}
-          Doğru:
-          <Text style={styles.answerCorrectHighlight}> {item.correctAnswer}</Text>
-        </Text>
-      </View>
-
-      <Text style={styles.questionPreview} numberOfLines={2}>
-        {item.questionText}
-      </Text>
-
-      {item.showReviewButton && (
-        <View style={styles.cardBottomRow}>
-          <Text style={styles.noteHint}>Anlamadığın bir nokta mı var?</Text>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.aiButton,
-              pressed && styles.pressed,
-            ]}
-            onPress={onPressReview}
-          >
-            <Text style={styles.aiButtonText}>AI’a Sor 🤖</Text>
-          </Pressable>
-        </View>
-      )}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-
-  contentContainer: {
-    paddingHorizontal: 10,
-    paddingTop: 18,
-    paddingBottom: 26,
-  },
-
+  safeArea: { flex: 1, backgroundColor: '#FAF6F0' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9E0D2',
+    backgroundColor: '#FAF6F0',
   },
-
   backButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-
-  backArrow: {
-    color: COLORS.primary,
-    fontSize: 17,
-    fontFamily: 'RethinkSansBold',
-  },
-
-  headerTextContainer: {
-    flex: 1,
-  },
-
-  headerTitle: {
-    color: COLORS.primary,
-    fontSize: 23,
-    lineHeight: 34,
-    fontFamily: 'BesleyBold',
-    marginBottom: 2,
-  },
-
-  headerSubtitle: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    fontFamily: 'RethinkSansRegular',
-  },
-
-  summaryCard: {
-    height: 52,
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    elevation: 1,
-  },
-
-  summaryTitle: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontFamily: 'BesleyBold',
-  },
-
-  summaryStats: {
-    fontSize: 13,
-    fontFamily: 'RethinkSansBold',
-  },
-
-  summaryMuted: {
-    color: COLORS.secondary,
-    fontFamily: 'RethinkSansRegular',
-  },
-
-  summarySuccess: {
-    color: COLORS.success,
-    fontFamily: 'RethinkSansBold',
-  },
-
-  summaryDanger: {
-    color: COLORS.danger,
-    fontFamily: 'RethinkSansBold',
-  },
-
-  reviewList: {
-    gap: 12,
-    marginBottom: 18,
-  },
-
-  card: {
-    backgroundColor: COLORS.white,
+    width: 36,
+    height: 36,
     borderRadius: 18,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: 14,
-    paddingTop: 14,
-    paddingBottom: 14,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    elevation: 2,
-  },
-
-  cardTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-
-  leftTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flexShrink: 1,
-  },
-
-  questionBadge: {
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 10,
-  },
-
-  questionBadgeCorrect: {
-    backgroundColor: COLORS.successBg,
-  },
-
-  questionBadgeWrong: {
-    backgroundColor: COLORS.dangerBg,
-  },
-
-  questionBadgeText: {
-    fontSize: 12,
-    fontFamily: 'RethinkSansBold',
-  },
-
-  questionBadgeTextCorrect: {
-    color: COLORS.success,
-  },
-
-  questionBadgeTextWrong: {
-    color: COLORS.danger,
-  },
-
-  statusWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  statusIcon: {
-    fontSize: 13,
-    fontFamily: 'RethinkSansBold',
-    marginRight: 5,
-  },
-
-  statusText: {
-    fontSize: 12,
-    fontFamily: 'RethinkSansBold',
-  },
-
-  correctText: {
-    color: COLORS.success,
-  },
-
-  wrongText: {
-    color: COLORS.danger,
-  },
-
-  answerMeta: {
-    color: COLORS.primary,
-    fontSize: 12,
-    fontFamily: 'RethinkSansBold',
-    flexShrink: 1,
-    textAlign: 'right',
-    marginLeft: 10,
-  },
-
-  answerCorrectHighlight: {
-    color: COLORS.success,
-    fontFamily: 'RethinkSansBold',
-  },
-
-  answerWrongHighlight: {
-    color: COLORS.danger,
-    fontFamily: 'RethinkSansBold',
-  },
-
-  questionPreview: {
-    color: COLORS.primary,
-    fontSize: 15,
-    lineHeight: 24,
-    fontFamily: 'BesleyMedium',
-    marginBottom: 14,
-  },
-
-  cardBottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  noteHint: {
-    color: COLORS.secondary,
-    fontSize: 12,
-    fontFamily: 'RethinkSansRegular',
-    flex: 1,
-    marginRight: 10,
-  },
-
-  aiButton: {
-    height: 34,
-    paddingHorizontal: 16,
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: COLORS.orange,
+    borderColor: '#E9E0D2',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.ai_button_background,
   },
-
-  aiButtonText: {
-    color: COLORS.orange,
-    fontSize: 12,
-    fontFamily: 'RethinkSansBold',
+  backButtonText: { fontSize: 18, color: '#1F3A4B', fontWeight: 'bold' },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#1F3A4B', fontFamily: 'BesleyBold' },
+  headerSubtitle: { fontSize: 12, color: '#6E7781', fontFamily: 'RethinkSansRegular' },
+  container: { flex: 1 },
+  contentContainer: { paddingHorizontal: 16, paddingVertical: 14 },
+  reportSummaryBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E9E0D2',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 14,
   },
-
-  homeButton: {
-    height: 46,
+  reportSummaryTitle: { fontSize: 15, fontWeight: '700', color: '#1F3A4B', fontFamily: 'BesleyBold' },
+  reportSummaryCounts: { fontSize: 13, fontWeight: '600', color: '#1F3A4B' },
+  cardItem: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#0288D1',
+    borderStyle: 'dashed',
     borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.white,
+    padding: 14,
+    marginBottom: 12,
+  },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  badgeSoruNo: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  bgCorrectBadge: { backgroundColor: '#E7EFE6' },
+  bgWrongBadge: { backgroundColor: '#FDE9E2' },
+  badgeSoruNoText: { fontSize: 12, fontWeight: '700' },
+  statusText: { fontSize: 12, fontWeight: '700' },
+  textCorrect: { color: '#486940' },
+  textWrong: { color: '#9E2A2B' },
+  answerCompareText: { fontSize: 12, color: '#1F3A4B' },
+  soruMetniShort: { fontSize: 13.5, color: '#1F3A4B', lineHeight: 19, fontFamily: 'BesleyBold', marginBottom: 10 },
+  aiAskRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#F0EBE1',
+    paddingTop: 8,
   },
-
-  homeButtonText: {
-    color: COLORS.primary,
-    fontSize: 14,
-    fontFamily: 'RethinkSansBold',
+  aiAskPrompt: { fontSize: 12, color: '#6E7781' },
+  aiAskButton: {
+    backgroundColor: '#FFF1EC',
+    borderWidth: 1,
+    borderColor: '#CE6A4A',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-
-  pressed: {
-    opacity: 0.86,
+  aiAskButtonText: { fontSize: 12, color: '#CE6A4A', fontWeight: '700' },
+  bottomHomeButton: {
+    backgroundColor: '#FAF6F0',
+    borderWidth: 1,
+    borderColor: '#E9E0D2',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20,
   },
+  bottomHomeButtonText: { color: '#1F3A4B', fontSize: 14, fontWeight: '700' },
 });
